@@ -9,6 +9,15 @@ Here are the logs showing the sequence of pusher events:
 
 ![Pusher Events](assets/pusher-events.png)
 
+Application can be tested by sending `location_updated` events using Pusher's
+debug console. Here's a sample `location_updated` event:
+
+```json
+{ "userId": "james", "location": { "lat": 37.7749, "lng": -122.4194 } }
+```
+
+![Debug Console](assets/debug-console.png)
+
 ## Development Build
 
 Copy `.env.sample` to `.env.local` and update with correct values for your
