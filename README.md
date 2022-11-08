@@ -9,8 +9,9 @@ Here are the logs showing the sequence of pusher events:
 
 ![Pusher Events](assets/pusher-events.png)
 
-Application can be tested by sending `location_updated` events using Pusher's
-debug console. Here's a sample `location_updated` event:
+Application can be tested by sending `location_updated` events on the
+`presence-channel` using Pusher's debug console. Here's the sample data for a
+`location_updated` event:
 
 ```json
 { "userId": "james", "location": { "lat": 37.7749, "lng": -122.4194 } }
