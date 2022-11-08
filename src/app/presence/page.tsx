@@ -147,7 +147,7 @@ export default function Page() {
 
   return (
     <Wrapper apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY as string}>
-      <Map center={myLocation} zoom={14}>
+      <Map center={myLocation} zoom={4}>
         {Object.keys(locations).map((userId) => (
           <Marker
             key={userId}
