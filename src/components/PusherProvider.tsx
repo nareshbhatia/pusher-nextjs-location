@@ -21,7 +21,7 @@ export default function PusherProvider({
   const [pusher, setPusher] = React.useState<Pusher | undefined>();
 
   React.useEffect(() => {
-    const pusher = new Pusher(pusherKey, {
+    const pusherInstance = new Pusher(pusherKey, {
       cluster,
       userAuthentication: {
         endpoint: '/api/pusher-auth',
@@ -29,8 +29,16 @@ export default function PusherProvider({
       },
       authEndpoint: '/api/channel-auth',
     });
-    console.log(pusher);
-    setPusher(pusher);
+    console.log(pusherInstance);
+    setPusher(pusherInstance);
+
+    // cleanup is causing disconnection and reconnection on every render, causing an infinite loop.
+    // Hence commenting this out.
+    // return function cleanup() {
+    //   if (pusher) {
+    //     pusher.disconnect();
+    //   }
+    // };
   }, [pusherKey, cluster]);
 
   return (

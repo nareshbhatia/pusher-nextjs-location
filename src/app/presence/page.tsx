@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Wrapper } from '@googlemaps/react-wrapper';
+import { PresenceChannel } from 'pusher-js';
 import { useLocation } from '../../components/LocationProvider';
 import { usePusher } from '../../components/PusherProvider';
 import { Location, LocationUpdate, User } from '../../models';
@@ -15,6 +16,9 @@ type LocationMap = { [userId: string]: Location };
 export default function Page() {
   const myLocation = useLocation();
   const pusher = usePusher();
+  const [presenceChannel, setPresenceChannel] = React.useState<
+    PresenceChannel | undefined
+  >();
   const [myUserId, setMyUserId] = React.useState<string | undefined>();
   const [users, setUsers] = React.useState<UserMap>({});
   const [locations, setLocations] = React.useState<LocationMap>({});
@@ -31,10 +35,13 @@ export default function Page() {
     if (pusher) {
       pusher.bind('pusher:signin_success', () => {
         console.log('pusher:signin_success');
-        const presenceChannel = pusher.subscribe('presence-channel');
+        const channel = pusher.subscribe('presence-channel') as PresenceChannel;
 
-        presenceChannel.bind('pusher:subscription_succeeded', (result: any) => {
+        channel.bind('pusher:subscription_succeeded', (result: any) => {
           console.log('pusher:subscription_succeeded', result);
+
+          // Set presenceChannel
+          setPresenceChannel(channel);
 
           // Set my userId
           setMyUserId(result.me.id);
@@ -54,48 +61,73 @@ export default function Page() {
           );
           setUsers(newUsers);
         });
+      });
+    }
 
-        presenceChannel.bind('pusher:member_added', (member: any) => {
-          console.log('pusher:member_added', member);
-          // Use function form, otherwise you will always get the initial value of users which is {}
-          setUsers((previousUsers) => {
-            return {
-              ...previousUsers,
-              [member.id]: { id: member.id, name: member.info.name },
-            };
-          });
-        });
+    return function cleanup() {
+      console.log('presence-page: useEffect cleanup() called');
+      if (pusher && presenceChannel) {
+        console.log('---> cleaning up');
+        presenceChannel.unbind();
+        pusher.unsubscribe('presence-channel');
+      }
+    };
+  }, [pusher, presenceChannel]);
 
-        presenceChannel.bind('pusher:member_removed', (member: any) => {
-          console.log('pusher:member_removed', member);
-          // Use function form, otherwise you will always get the initial value of users which is {}
-          setUsers((previousUsers) => {
-            const newUsers = { ...previousUsers };
-            delete newUsers[member.id];
-            return newUsers;
-          });
-
-          setLocations((previousLocations) => {
-            const newLocations = { ...previousLocations };
-            delete newLocations[member.id];
-            return newLocations;
-          });
-        });
-
-        presenceChannel.bind('location_updated', (update: LocationUpdate) => {
-          console.log('location_updated', update);
-          // Use function form, otherwise you will always get the initial value of users which is {}
-          setLocations((previousLocations) => {
-            return {
-              ...previousLocations,
-              [update.userId]: update.location,
-            };
-          });
+  // Subscribe to pusher:member_added
+  React.useEffect(() => {
+    if (presenceChannel) {
+      presenceChannel.bind('pusher:member_added', (member: any) => {
+        console.log('pusher:member_added', member);
+        // Use function form, otherwise you will always get the initial value of users which is {}
+        setUsers((previousUsers) => {
+          return {
+            ...previousUsers,
+            [member.id]: { id: member.id, name: member.info.name },
+          };
         });
       });
     }
-  }, [pusher, users]);
+  }, [presenceChannel]);
 
+  // Subscribe to pusher:member_removed
+  React.useEffect(() => {
+    if (presenceChannel) {
+      presenceChannel.bind('pusher:member_removed', (member: any) => {
+        console.log('pusher:member_removed', member);
+        // Use function form, otherwise you will always get the initial value of users which is {}
+        setUsers((previousUsers) => {
+          const newUsers = { ...previousUsers };
+          delete newUsers[member.id];
+          return newUsers;
+        });
+
+        setLocations((previousLocations) => {
+          const newLocations = { ...previousLocations };
+          delete newLocations[member.id];
+          return newLocations;
+        });
+      });
+    }
+  }, [presenceChannel]);
+
+  // Subscribe to location_updated
+  React.useEffect(() => {
+    if (presenceChannel) {
+      presenceChannel.bind('location_updated', (update: LocationUpdate) => {
+        console.log('location_updated', update);
+        // Use function form, otherwise you will always get the initial value of users which is {}
+        setLocations((previousLocations) => {
+          return {
+            ...previousLocations,
+            [update.userId]: update.location,
+          };
+        });
+      });
+    }
+  }, [presenceChannel]);
+
+  // Post changes to my location
   React.useEffect(() => {
     if (myUserId && myLocation) {
       postData('/api/update-location', {
@@ -111,7 +143,7 @@ export default function Page() {
     return <div>Loading...</div>;
   }
 
-  console.log('locations', locations);
+  console.log('Rendering presence page, locations:', locations);
 
   return (
     <Wrapper apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY as string}>
@@ -120,7 +152,7 @@ export default function Page() {
           <Marker
             key={userId}
             position={locations[userId]}
-            label={users[userId].name}
+            label={users[userId]?.name}
           />
         ))}
       </Map>

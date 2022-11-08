@@ -30,6 +30,14 @@ export default function LocationProvider({ children }: LocationProviderProps) {
         'Sorry, geolocation is not available on your device. You need that to use this app'
       );
     }
+
+    // cleanup is causing clearWatch and watchPosition on every render, causing an infinite loop.
+    // Hence commenting this out.
+    // return function cleanup() {
+    //   if (watchId) {
+    //     navigator.geolocation.clearWatch(watchId);
+    //   }
+    // };
   }, []);
 
   return (
