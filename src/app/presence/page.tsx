@@ -69,20 +69,15 @@ export default function Page() {
         presenceChannel.bind('pusher:member_removed', (member: any) => {
           console.log('pusher:member_removed', member);
           // Use function form, otherwise you will always get the initial value of users which is {}
-          // Use ...rest to delete the removed member
           setUsers((previousUsers) => {
-            const {
-              [member.id]: {},
-              ...newUsers
-            } = previousUsers;
+            const newUsers = { ...previousUsers };
+            delete newUsers[member.id];
             return newUsers;
           });
 
           setLocations((previousLocations) => {
-            const {
-              [member.id]: {},
-              ...newLocations
-            } = previousLocations;
+            const newLocations = { ...previousLocations };
+            delete newLocations[member.id];
             return newLocations;
           });
         });
